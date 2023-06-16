@@ -67,6 +67,7 @@ public abstract class Command implements Closeable {
 
             shutdownHookThread = new Thread(() -> {
                 try {
+                    // elasticsearch.close()
                     this.close();
                 } catch (final IOException e) {
                     try (
@@ -81,6 +82,7 @@ public abstract class Command implements Closeable {
                     }
                 }
             });
+            // Java 中用于注册 JVM 关闭钩子的方法，用于在 JVM 关闭前执行一些清理操作或保存数据等工作。
             Runtime.getRuntime().addShutdownHook(shutdownHookThread);
         }
 

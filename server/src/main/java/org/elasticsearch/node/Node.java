@@ -313,6 +313,9 @@ public class Node implements Closeable {
                     initialEnvironment.logsFile(), initialEnvironment.pluginsFile());
             }
 
+            // 加载下面目录的 jar 包, plugin info 保存在各目录下的 plugin-descriptor.properties 中
+            // - /Users/loucong/wudong/java/bin/es/elasticsearch-7.8.0/modules
+            // - /Users/loucong/wudong/java/bin/es/elasticsearch-7.8.0/plugin
             this.pluginsService = new PluginsService(tmpSettings, initialEnvironment.configFile(), initialEnvironment.modulesFile(),
                 initialEnvironment.pluginsFile(), classpathPlugins);
             final Settings settings = pluginsService.updatedSettings();
@@ -766,11 +769,13 @@ public class Node implements Closeable {
 
         clusterService.addStateApplier(transportService.getTaskManager());
         // start after transport service so the local disco is known
+        // 开启 discovery 模块, 并且开启 joinThreadControl/
         discovery.start(); // start before cluster service so that it can set initial state on ClusterApplierService
         clusterService.start();
         assert clusterService.localNode().equals(localNodeFactory.getNode())
             : "clusterService has a different local node than the factory provided";
         transportService.acceptIncomingRequests();
+        // 开始选择 master 节点
         discovery.startInitialJoin();
         final TimeValue initialStateTimeout = DiscoverySettings.INITIAL_STATE_TIMEOUT_SETTING.get(settings());
         configureNodeAndClusterIdStateListener(clusterService);

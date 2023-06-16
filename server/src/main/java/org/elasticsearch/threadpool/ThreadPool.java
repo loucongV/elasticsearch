@@ -159,6 +159,7 @@ public class ThreadPool implements ReportingService<ThreadPoolInfo>, Scheduler {
         return Collections.unmodifiableCollection(builders.values());
     }
 
+    // 线程池中任务的预计完成时间间隔
     public static Setting<TimeValue> ESTIMATED_TIME_INTERVAL_SETTING =
         Setting.timeSetting("thread_pool.estimated_time_interval",
             TimeValue.timeValueMillis(200), TimeValue.ZERO, Setting.Property.NodeScope);

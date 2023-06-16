@@ -46,6 +46,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * 此类处理传入的加入请求（通过 zia ZenDiscovery ）。传入节点直接添加到集群状态或在主选举期间累积。
  * This class processes incoming join request (passed zia {@link ZenDiscovery}). Incoming nodes
  * are directly added to the cluster state or are accumulated during master election.
  */
@@ -172,6 +173,7 @@ public class NodeJoinController {
      */
     public synchronized void handleJoinRequest(final DiscoveryNode node, final MembershipAction.JoinCallback callback) {
         if (electionContext != null) {
+            // 将受到的连接进行存储
             electionContext.addIncomingJoin(node, callback);
             checkPendingJoinsAndElectIfNeeded();
         } else {
@@ -187,6 +189,7 @@ public class NodeJoinController {
      */
     private synchronized void checkPendingJoinsAndElectIfNeeded() {
         assert electionContext != null : "election check requested but no active context";
+        // 当节点检查收到的投票是否足够时, 就是检查加入它的连接数是否足够, 其中会去掉没有Master资格节点的投票。
         final int pendingMasterJoins = electionContext.getPendingMasterJoinsCount();
         if (electionContext.isEnoughPendingJoins(pendingMasterJoins) == false) {
             if (logger.isTraceEnabled()) {

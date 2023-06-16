@@ -64,6 +64,7 @@ public class SettingsBasedSeedHostsProvider implements SeedHostsProvider {
         } else if (DISCOVERY_SEED_HOSTS_SETTING.exists(settings)) {
             configuredHosts = DISCOVERY_SEED_HOSTS_SETTING.get(settings);
         } else {
+            // 如果未指定单播主机，则在本地计算机上填写简单的默认值
             // if unicast hosts are not specified, fill with simple defaults on the local machine
             configuredHosts = transportService.getDefaultSeedAddresses();
         }

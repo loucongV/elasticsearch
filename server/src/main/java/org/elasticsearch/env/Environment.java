@@ -115,6 +115,7 @@ public class Environment {
 
         tmpFile = Objects.requireNonNull(tmpPath);
 
+        // 获取 plugin 的路径
         pluginsFile = homeFile.resolve("plugins");
 
         List<String> dataPaths = PATH_DATA_SETTING.get(settings);
@@ -126,6 +127,7 @@ public class Environment {
                     dataFiles[i] = PathUtils.get(dataPaths.get(i)).toAbsolutePath().normalize();
                 }
             } else {
+                // 数据存储目录
                 dataFiles = new Path[]{homeFile.resolve("data")};
             }
         } else {
@@ -155,6 +157,7 @@ public class Environment {
         if (PATH_LOGS_SETTING.exists(settings)) {
             logsFile = PathUtils.get(PATH_LOGS_SETTING.get(settings)).toAbsolutePath().normalize();
         } else {
+            // 配置日志目录
             logsFile = homeFile.resolve("logs");
         }
 
@@ -164,8 +167,11 @@ public class Environment {
             pidFile = null;
         }
 
+        // bin 目录
         binFile = homeFile.resolve("bin");
+        // lib 目录
         libFile = homeFile.resolve("lib");
+        // modules 目录
         modulesFile = homeFile.resolve("modules");
 
         final Settings.Builder finalSettings = Settings.builder().put(settings);

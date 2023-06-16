@@ -41,6 +41,7 @@ public class ElectMasterService {
 
     private static final Logger logger = LogManager.getLogger(ElectMasterService.class);
 
+    // 最小主节点数，这是防止脑裂、防止数据丢失的极其重要的参数。
     public static final Setting<Integer> DISCOVERY_ZEN_MINIMUM_MASTER_NODES_SETTING =
         Setting.intSetting("discovery.zen.minimum_master_nodes", -1, Property.Dynamic, Property.NodeScope, Property.Deprecated);
 
@@ -83,6 +84,10 @@ public class ElectMasterService {
         }
 
         /**
+         * 比较两个候选人以表明哪个更好的 master。
+         *  - 集群状态版本号越高越好
+         *  - 若集群状态版本号版本相同, 若存在 Master, 则有限
+         *  - 若集群状态版本号版本相同, 并且都是 Master 或者 Slave, 则比较 NodeId
          * compares two candidates to indicate which the a better master.
          * A higher cluster state version is better
          *
@@ -135,6 +140,7 @@ public class ElectMasterService {
     }
 
     /**
+     * 从可能的节点中选出一个新的主节点，并返回它。如果没有选出 master，则返回null 。
      * Elects a new master out of the possible nodes, returning it. Returns {@code null}
      * if no master has been elected.
      */
@@ -211,6 +217,7 @@ public class ElectMasterService {
     }
 
     /** master nodes go before other nodes, with a secondary sort by id **/
+    // 主节点排在其他节点之前，按 id 进行二次排序
      private static int compareNodes(DiscoveryNode o1, DiscoveryNode o2) {
         if (o1.isMasterNode() && !o2.isMasterNode()) {
             return -1;

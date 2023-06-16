@@ -92,6 +92,7 @@ import static org.elasticsearch.gateway.GatewayService.STATE_NOT_RECOVERED_BLOCK
 public class ZenDiscovery extends AbstractLifecycleComponent implements Discovery, PingContextProvider, IncomingClusterStateListener {
     private static final Logger logger = LogManager.getLogger(ZenDiscovery.class);
 
+    // 执行 ping 命令超时时间
     public static final Setting<TimeValue> PING_TIMEOUT_SETTING =
         Setting.positiveTimeSetting("discovery.zen.ping_timeout", timeValueSeconds(3), Property.NodeScope);
     public static final Setting<TimeValue> JOIN_TIMEOUT_SETTING =
@@ -440,6 +441,7 @@ public class ZenDiscovery extends AbstractLifecycleComponent implements Discover
             return;
         }
 
+        // 如何当前节点是 Master
         if (transportService.getLocalNode().equals(masterNode)) {
             final int requiredJoins = Math.max(0, electMaster.minimumMasterNodes() - 1); // we count as one
             logger.debug("elected as master, waiting for incoming joins ([{}] needed)", requiredJoins);
@@ -796,6 +798,7 @@ public class ZenDiscovery extends AbstractLifecycleComponent implements Discover
 
     private DiscoveryNode findMaster() {
         logger.trace("starting to ping");
+        // ping 所有节点, 结果不包含本节点
         List<ZenPing.PingResponse> fullPingResponses = pingAndWait(pingTimeout).toList();
         if (fullPingResponses == null) {
             logger.trace("No full ping responses");
@@ -819,21 +822,26 @@ public class ZenDiscovery extends AbstractLifecycleComponent implements Discover
         assert fullPingResponses.stream().map(ZenPing.PingResponse::node)
             .filter(n -> n.equals(localNode)).findAny().isPresent() == false;
 
+        // 将本节点单独添加到 fullPingResponses
         fullPingResponses.add(new ZenPing.PingResponse(localNode, null, this.clusterState()));
 
         // filter responses
+        // 若该参数为 true, 过滤掉不具备 Master 的资格: discovery.zen.master_election.ignore_non_master_pings
         final List<ZenPing.PingResponse> pingResponses = filterPingResponses(fullPingResponses, masterElectionIgnoreNonMasters, logger);
 
+        // 存储集群当前活跃 Master 列表
         List<DiscoveryNode> activeMasters = new ArrayList<>();
         for (ZenPing.PingResponse pingResponse : pingResponses) {
             // We can't include the local node in pingMasters list, otherwise we may up electing ourselves without
             // any check / verifications from other nodes in ZenDiscover#innerJoinCluster()
+            // 遍历 pingResponses, 将每个节点所任务的当前 Master 节点加入 activeMasters 列表中, 不包含本节点
             if (pingResponse.master() != null && !localNode.equals(pingResponse.master())) {
                 activeMasters.add(pingResponse.master());
             }
         }
 
         // nodes discovered during pinging
+        // 存储 master 候选者列表
         List<ElectMasterService.MasterCandidate> masterCandidates = new ArrayList<>();
         for (ZenPing.PingResponse pingResponse : pingResponses) {
             if (pingResponse.node().isMasterNode()) {
@@ -841,8 +849,11 @@ public class ZenDiscovery extends AbstractLifecycleComponent implements Discover
             }
         }
 
+        // 如果 activeMasters 为空, 则从 masterCandidates 中选举
         if (activeMasters.isEmpty()) {
+            // discovery.zen.minimum_master_nodes。为了避免脑裂，最小值应该是有 Master 资格的节点数n/2+1。
             if (electMaster.hasEnoughCandidates(masterCandidates)) {
+                // 由于该处都具备 master 资格, 所以若集群版本号相同, 则只会比较 NodeId
                 final ElectMasterService.MasterCandidate winner = electMaster.electMaster(masterCandidates);
                 logger.trace("candidate {} won election", winner);
                 return winner.getNode();
@@ -853,9 +864,11 @@ public class ZenDiscovery extends AbstractLifecycleComponent implements Discover
                 return null;
             }
         } else {
+            // 否则从 activeMasters 中选举
             assert !activeMasters.contains(localNode) :
                 "local node should never be elected as master when other nodes indicate an active master";
             // lets tie break between discovered nodes
+            // 获取 NodeId 最小的值
             return electMaster.tieBreakActiveMasters(activeMasters);
         }
     }

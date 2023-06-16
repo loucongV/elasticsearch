@@ -77,6 +77,7 @@ public class LogConfigurator {
      * fail startup and any such messages can be seen on the console.
      */
     private static final AtomicBoolean error = new AtomicBoolean();
+    // 日志状态监听器，用于将日志状态信息输出到控制台
     private static final StatusListener ERROR_LISTENER = new StatusConsoleListener(Level.ERROR) {
         @Override
         public void log(StatusData data) {

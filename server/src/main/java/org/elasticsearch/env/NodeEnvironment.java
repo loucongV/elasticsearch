@@ -194,6 +194,7 @@ public final class NodeEnvironment  implements Closeable {
         private final NodePath[] nodePaths;
 
         /**
+         * 尝试获取节点 id 的节点锁，如果无法获取则抛出IOException
          * Tries to acquire a node lock for a node id, throws {@code IOException} if it is unable to acquire it
          * @param pathFunction function to check node path before attempt of acquiring a node lock
          */
@@ -211,6 +212,7 @@ public final class NodeEnvironment  implements Closeable {
                     if (pathFunction.apply(dir) == false) {
                         continue;
                     }
+                    // 创建 Lucene 目录
                     try (Directory luceneDir = FSDirectory.open(dir, NativeFSLockFactory.INSTANCE)) {
                         logger.trace("obtaining node lock on {} ...", dir.toAbsolutePath());
                         locks[dirIndex] = luceneDir.obtainLock(NODE_LOCK_FILENAME);
@@ -1209,6 +1211,7 @@ public final class NodeEnvironment  implements Closeable {
     }
 
     /**
+     * 这是确保我们实际上拥有写入所有数据目录的写入权限的最大努力。如果节点以错误的用户名等启动，这可以防止灾难
      * This is a best effort to ensure that we actually have write permissions to write in all our data directories.
      * This prevents disasters if nodes are started under the wrong username etc.
      */

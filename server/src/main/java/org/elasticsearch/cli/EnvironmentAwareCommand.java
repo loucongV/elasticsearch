@@ -78,7 +78,7 @@ public abstract class EnvironmentAwareCommand extends Command {
             }
             settings.put(kvp.key, kvp.value);
         }
-
+        // 可以使用系统变量 es.path.data/es.path.home/es.path.logs 将变值改变
         putSystemPropertyIfSettingIsMissing(settings, "path.data", "es.path.data");
         putSystemPropertyIfSettingIsMissing(settings, "path.home", "es.path.home");
         putSystemPropertyIfSettingIsMissing(settings, "path.logs", "es.path.logs");
@@ -93,6 +93,7 @@ public abstract class EnvironmentAwareCommand extends Command {
 
     /** Create an {@link Environment} for the command to use. Overrideable for tests. */
     protected final Environment createEnv(final Settings baseSettings, final Map<String, String> settings) throws UserException {
+        // 获取配置文件路径
         final String esPathConf = System.getProperty("es.path.conf");
         if (esPathConf == null) {
             throw new UserException(ExitCodes.CONFIG, "the system property [es.path.conf] must be set");

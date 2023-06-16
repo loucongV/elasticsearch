@@ -79,6 +79,7 @@ class Elasticsearch extends EnvironmentAwareCommand {
          * presence of a security manager or lack thereof act as if there is a security manager present (e.g., DNS cache policy). This
          * forces such policies to take effect immediately.
          */
+        // 设置当前 JVM 进程的安全管理器，当程序在执行时，每个安全检查点都会调用 SecurityManager 中的相应方法进行安全检查
         System.setSecurityManager(new SecurityManager() {
 
             @Override
@@ -87,6 +88,7 @@ class Elasticsearch extends EnvironmentAwareCommand {
             }
 
         });
+        // 注册日志监听器
         LogConfigurator.registerErrorListener();
         final Elasticsearch elasticsearch = new Elasticsearch();
         int status = main(args, elasticsearch, Terminal.DEFAULT);
@@ -107,12 +109,16 @@ class Elasticsearch extends EnvironmentAwareCommand {
     }
 
     private static void overrideDnsCachePolicyProperties() {
+        // networkaddress.cache.ttl: 60, 这意味着 DNS 查询结果将会缓存 60 秒，之后会重新查询 DNS 服务器以获取最新的 IP 地址(正向缓存)
+        // networkaddress.cache.negative.ttl: 60, 负向缓存
+        // 使用: -Des.networkaddress.cache.ttl=30 -Des.networkaddress.cache.negative.ttl=5
         for (final String property : new String[] {"networkaddress.cache.ttl", "networkaddress.cache.negative.ttl" }) {
             final String overrideProperty = "es." + property;
             final String overrideValue = System.getProperty(overrideProperty);
             if (overrideValue != null) {
                 try {
                     // round-trip the property to an integer and back to a string to ensure that it parses properly
+                    // 允许程序在运行时修改安全属性的值。
                     Security.setProperty(property, Integer.toString(Integer.valueOf(overrideValue)));
                 } catch (final NumberFormatException e) {
                     throw new IllegalArgumentException(
